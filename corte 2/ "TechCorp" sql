@@ -1,0 +1,92 @@
+create database techcorp;
+
+use techcorp;
+
+create table departamento(
+idDepartamento int auto_increment primary key not null,
+nombreDepartamento varchar(50) not null
+);
+
+create  table Empleados(
+IdEmpleado int auto_increment primary key not null,
+nombreEmpleado varchar(20) not null,
+apellidoEmpleado varchar(20) not null,
+edadEmpleado int not null,
+salario decimal(10,2) not null,
+idDepartamento int,
+fechacontratacion DATE not null,
+constraint fk_departamento foreign key (idDepartamento) references departamento(idDepartamento)
+);
+
+insert into departamento (nombreDepartamento) values
+('Ventas'), 
+('IT'), 
+('Recursos Humanos'), 
+('Marketing');
+
+insert into Empleados (NombreEmpleado, ApellidoEmpleado, EdadEmpleado, Salario, idDepartamento, fechacontratacion) values 
+('Danna','Gómez', 20, 3507.00, 1, '2019-03-03'),      
+('Camilo', 'Sanchez', 36, 4500.00, 2, '2018-06-01'),     
+('Sarai', 'Cortez', 27, 4223.00, 1, '2023-01-18'),   
+('valentina','Figueroa', 4285, 2800.00, 3, '2019-11-15'),       
+('Andrés','Torres', 25, 5170.00, 1, '2023-05-21'),    
+('Alisson','Ramirez', 24, 3168.00, 4, '2020-09-01'),      
+('Catalina','Mendez', 19, 3918.00, 2, '2024-02-08');
+
+
+select * from Empleados;
+select * from departamento;
+
+
+-- lista de empleados 
+select nombreEmpleado, apellidoEmpleado, edadEmpleado, salario 
+from Empleados;
+
+-- Altos ingresos: Empleados que ganan más de $4,000
+select nombreEmpleado, apellidoEmpleado, salario 
+from Empleados 
+where Salario > 4000;
+
+-- Fuerza de ventas: Lista de empleados que trabajan en el departamento de Ventas
+where e.nombreEmpleado, e.apellidoEmpleado, d.nombreDepartamento 
+from Empleados e, departamento d 
+where e.idDepartamento = d.idDepartamento 
+  and d.nombreDepartamento = 'Ventas';
+
+-- rango de edad
+select nombreEmpleado, apellidoEmpleado, edadEmpleado 
+from Empleados 
+where EdadEmpleado between 30 and 40;
+
+-- Nuevas contrataciones: ¿Quiénes han sido contratados después del año 2020?
+select nombreEmpleado, apellidoEmpleado, fechacontratacion
+from Empleados
+where year(fechacontratacion)>2020;
+
+-- Distribución de empleados: ¿Cuántos empleados hay en cada departamento?
+
+select d.nombreDepartamento, count(e.IdEmpleado) as totalempleados 
+from departamento d, Empleados e 
+where d.idDepartamento = e.idDepartamento 
+group by d.nombreDepartamento;
+
+-- ¿Cuál es el salario promedio en la empresa?
+select avg(salario) as salariopromedio 
+from Empleados;
+-- los empleados cuyos nombres comienzan con "A" o "C".
+select nombreEmpleado, apellidoEmpleado 
+from Empleados 
+where nombreEmpleado like 'A%' or nombreEmpleado like 'C%';
+
+--  Encuentra a los empleados que no pertenecen al departamento de IT.
+SELECT e.NombreEmpleado, e.ApellidoEmpleado, d.nombreDepartamento 
+from Empleados e, departamento d 
+where e.idDepartamento = d.idDepartamento 
+  and not (d.nombreDepartamento = 'IT');
+
+--- El mejor pagado
+ SELECT nombreEmpleado, apellidoEmpleado, salario
+ from Empleados
+ order by salario desc;
+
+
