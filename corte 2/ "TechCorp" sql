@@ -24,7 +24,7 @@ insert into departamento (nombreDepartamento) values
 ('Recursos Humanos'), 
 ('Marketing');
 
-insert into Empleados (NombreEmpleado, ApellidoEmpleado, EdadEmpleado, Salario, idDepartamento, fechacontratacion) values 
+insert into Empleados (nombreEmpleado, apellidoEmpleado, edadEmpleado, salario, idDepartamento, fechacontratacion) values 
 ('Danna','Gómez', 20, 3507.00, 1, '2019-03-03'),      
 ('Camilo', 'Sanchez', 36, 4500.00, 2, '2018-06-01'),     
 ('Sarai', 'Cortez', 27, 4223.00, 1, '2023-01-18'),   
@@ -32,6 +32,7 @@ insert into Empleados (NombreEmpleado, ApellidoEmpleado, EdadEmpleado, Salario, 
 ('Andrés','Torres', 25, 5170.00, 1, '2023-05-21'),    
 ('Alisson','Ramirez', 24, 3168.00, 4, '2020-09-01'),      
 ('Catalina','Mendez', 19, 3918.00, 2, '2024-02-08');
+
 
 
 select * from Empleados;
@@ -48,10 +49,10 @@ from Empleados
 where Salario > 4000;
 
 -- Fuerza de ventas: Lista de empleados que trabajan en el departamento de Ventas
-where e.nombreEmpleado, e.apellidoEmpleado, d.nombreDepartamento 
-from Empleados e, departamento d 
-where e.idDepartamento = d.idDepartamento 
-  and d.nombreDepartamento = 'Ventas';
+select e.nombreEmpleado, e.apellidoEmpleado, d.nombreDepartamento 
+from Empleados e
+inner join departamento d on e.idDepartamento = d.idDepartamento 
+where d.nombreDepartamento = 'Ventas';
 
 -- rango de edad
 select nombreEmpleado, apellidoEmpleado, edadEmpleado 
@@ -79,14 +80,27 @@ from Empleados
 where nombreEmpleado like 'A%' or nombreEmpleado like 'C%';
 
 --  Encuentra a los empleados que no pertenecen al departamento de IT.
-SELECT e.NombreEmpleado, e.ApellidoEmpleado, d.nombreDepartamento 
+select e.NombreEmpleado, e.ApellidoEmpleado, d.nombreDepartamento 
 from Empleados e, departamento d 
 where e.idDepartamento = d.idDepartamento 
   and not (d.nombreDepartamento = 'IT');
 
 --- El mejor pagado
- SELECT nombreEmpleado, apellidoEmpleado, salario
+ select nombreEmpleado, apellidoEmpleado, salario
  from Empleados
  order by salario desc;
 
+/* actualizacio o modificacion
+ * update nombretabla set nombrecolumna=valor. nombrecolumna2=valor, ... where condicion
+ */
+update Empleados set  EdadEmpleado = EdadEmpleado-4245 where nombreEmpleado='valentina';
+
+-- upsert
+/*insert into Empleados (nombreEmpleado, apellidoEmpleado, edadEmpleado, salario, idDepartamento, fechacontratacion) values 
+('Danna','Gómez', 20, 3507.00, 1, '2019-03-03'),
+on duplicate key update
+nombreEmpleado=value(nombreEmpleado),
+apellidoEmpleado=value(apellidoEmpleado);*/
+
+/* sentencia delete: elim
 
