@@ -1,6 +1,7 @@
-
 -- Laboratorio TrazaCafé · Bloque 1 · 
--- Retos 2 
+-- Retos 2
+-- (reto 10, punto 4: script idempotente, se borra la base si ya existe para poder correrlo varias veces)
+drop database if exists trazacafe;
 create database trazacafe;
 use trazacafe;
 
@@ -224,6 +225,7 @@ delete from cliente;
 -- req. 6  que es no perder el historial se cumple con las llaves foráneas ON DELETE RESTRICT.)
 
 
+-- Bloque 2: el esquema cambia y llegan los datos
 -- RETO 4: Llegó el correo de Berlín
 
 -- País del cliente: obligatorio y con valor por defecto 'Colombia'
@@ -232,9 +234,9 @@ alter table Cliente
 
 -- Huella de carbono de cada tostión: acepta nulos, nunca negativa (un null pasa el check porque la condición queda como desconocida y no falsa)
 alter table Tostion
-  add column huellacarbonokg decimal(8,2) null;
+  add column huella_carbono_kg decimal(8,2) null;
 alter table Tostion
-  add constraint chk_tostion_huella check (huellacarbonokg >= 0);
+  add constraint chk_tostion_huella check (huella_carbono_kg >= 0);
 
 -- 4.3 Ampliar todas las columnas de kilos de decimal(7,2) a decimal(10,2)
 alter table Lote        modify column kiloslot     decimal(10,2) not null;
@@ -263,8 +265,6 @@ create table FincaCertificacion (
 --     Además, precioKilo sigue el mismo estilo camelCase del resto del modelo.
 alter table LineaPedido change column preciokilosPedidos precioKilo decimal(12,2) not null;
 
-
--- Verificación
 describe Cliente;
 describe Tostion;
 describe Lote;
@@ -273,7 +273,9 @@ describe Certificacion;
 describe FincaCertificacion;
 
 -- Reflexión Reto 4:
--- (escribe aquí tu respuesta en 2 o 3 líneas)
+-- (Al borrar y recrear una tabla se pierden sus filas, y en mi modelo además hay llaves foráneas que la apuntan:
+-- por ejemplo, no se puede borrar Tostion sin romper LineaPedido, ni Finca sin romper Lote y FincaCertificacion.
+-- Con alter table los clientes que ya existían se quedan y toman pais = 'Colombia' por defecto, sin detener el sistema.)
 
 
 -- RETO 5: La primera cosecha
@@ -290,26 +292,26 @@ alter table Catacion     auto_increment = 1;
 alter table Tostion      auto_increment = 1;
 alter table LineaPedido  auto_increment = 1;
 
--- 5.1 Fincas: 4 fincas de 4 departamentos (insert de varias filas)
+-- Fincas: 4 fincas de 4 departamentos (insert de varias filas)
 insert into Finca (nombre, caficultor, municipio, departamento, altitud) values
   ('La Esperanza', 'Jorge Cuéllar',   'Pitalito', 'Huila',     1750),
   ('El Mirador',   'Luz Marina Ríos', 'Salento',  'Quindío',   1850),
   ('Los Naranjos', 'Pedro Enríquez',  'Buesaco',  'Nariño',    1950),
   ('Villa Clara',  'Rosa Elena Mejía','Jardín',   'Antioquia', 1700);
 
--- 5.2 Catadores
+-- Catadores
 insert into Catador (nombreCatador) values
   ('Andrea Salazar'),
   ('Felipe Rojas'),
   ('Camila Ortiz');
 
--- 5.3 Clientes: uno en Alemania; los demás toman el valor por defecto 'Colombia'
+--  Clientes: uno en Alemania; los demás toman el valor por defecto 'Colombia'
 insert into Cliente (nombreCliente, pais) values
   ('Café Andino Bogotá', default),
   ('Barista Medellín',   default),
   ('Tostadora de Berlín','Alemania');
 
--- 5.4 Lotes: 8 lotes
+-- Lotes: 8 lotes
 insert into Lote (codigoUnico, variedad, proceso, fechacosecha, kiloslot, idFinca) values
   ('HUI-2026-001', 'Caturra',  'lavado',  '2026-01-15', 1200.00, 1),
   ('HUI-2026-002', 'Geisha',   'natural', '2026-01-20',  350.00, 1),
@@ -320,7 +322,7 @@ insert into Lote (codigoUnico, variedad, proceso, fechacosecha, kiloslot, idFinc
   ('ANT-2026-001', 'Castillo', 'natural', '2026-03-01', 1000.00, 4),
   ('ANT-2026-002', 'Bourbon',  'lavado',  '2026-03-05',  600.00, 4);
 
--- 5.5 Cataciones: 10 cataciones (algunos lotes catados por dos catadores distintos)
+--  Cataciones: 10 cataciones (algunos lotes catados por dos catadores distintos)
 insert into Catacion (puntaje, idCatador, idLote) values
   (86.50, 1, 1),
   (86.00, 2, 1),
@@ -333,7 +335,7 @@ insert into Catacion (puntaje, idCatador, idLote) values
   (88.00, 3, 6),
   (79.50, 1, 7);
 
--- 5.6 Tostiones: 5 tostiones (kilosSalida <= kilosEntrada; huella puede ser null)
+-- 5 tostiones (kilosSalida <= kilosEntrada; huella puede ser null)
 insert into Tostion (fechaTostion, kilosEntrada, kilosSalida, perfil, idLote, huella_carbono_kg) values
   ('2026-03-02', 100.00,  84.50, 'medio',  1, 12.40),
   ('2026-03-04',  50.00,  42.00, 'claro',  2,  6.10),
@@ -341,14 +343,14 @@ insert into Tostion (fechaTostion, kilosEntrada, kilosSalida, perfil, idLote, hu
   ('2026-03-08',  80.00,  67.20, 'medio',  5,  9.75),
   ('2026-03-09',  40.00,  33.60, 'claro',  6, null);
 
--- 5.7 Pedidos: 4 pedidos; el estado no se envía y toma el valor por defecto 'pendiente'
+-- Pedidos: 4 pedidos; el estado no se envía y toma el valor por defecto 'pendiente'
 insert into Pedido (idCliente) values
   (3),
   (1),
   (3),
   (2);
 
--- 5.8 Líneas de pedido: 6 líneas (precioKilo en pesos colombianos)
+-- Líneas de pedido: 6 líneas (precioKilo en pesos colombianos)
 insert into LineaPedido (precioKilo, kilosPedidos, idPedido, idTostion) values
   ( 95000.00, 30.00, 1, 1),
   (210000.00, 20.00, 1, 2),
@@ -357,7 +359,7 @@ insert into LineaPedido (precioKilo, kilosPedidos, idPedido, idTostion) values
   (190000.00, 15.00, 3, 5),
   ( 72000.00, 40.00, 4, 3);
 
--- 5.9 Certificaciones del Reto 4
+--  Certificaciones del Reto 4
 insert into Certificacion (nombreCertificacion) values
   ('Orgánico'),
   ('Fair Trade');
@@ -368,7 +370,7 @@ insert into FincaCertificacion (idFinca, idCertificacion) values
   (3, 2),
   (4, 1);
 
--- 5.10 Lotes de especialidad: copia de los lotes con puntaje promedio >= 85
+-- Lotes de especialidad: copia de los lotes con puntaje promedio >= 85
 create table lotes_especialidad (
   codigoLote       varchar(12)  primary key,
   puntajePromedio  decimal(5,2) not null
@@ -394,22 +396,22 @@ union all select 'lineas', count(*) from LineaPedido
 union all select 'certificaciones', count(*) from FincaCertificacion;
 
 -- Reflexión Reto 5:
--- (escribe aquí tu respuesta en 2 o 3 líneas)
+-- (No. lotes_especialidad es una copia hecha en el momento del insert ... select: hoy tiene HUI-2026-001, HUI-2026-002,
+-- NAR-2026-001 y NAR-2026-002, pero si QUI-2026-002 (promedio 84,75) recibe una nueva catación de 86, no aparece solo.
+-- Para que se actualice sola usaría una vista (create view), que calcula el promedio cada vez que se consulta.)
 
 
--- =====================================================================
 -- RETO 6: La lista de precios que llega dos veces (upsert)
--- =====================================================================
 
--- 6.1 Tabla de precios de referencia
-create table precios_referencia (
+--  Tabla de precios de referencia
+create table preciosreferencia (
   variedad        varchar(10)   primary key,
   precio_kg       decimal(12,2) not null,
   actualizado_en  datetime      not null default current_timestamp
 );
 
--- 6.2 Semana 1
-insert into precios_referencia (variedad, precio_kg) values
+--  Semana 1
+insert into preciosreferencia (variedad, precio_kg) values
   ('Castillo',  32000.00),
   ('Caturra',   35500.00),
   ('Geisha',   120000.00);
@@ -419,31 +421,358 @@ select * from precios_referencia;
 -- Pausa de 2 segundos para que se note el cambio en actualizado_en
 select sleep(2);
 
--- 6.3 Semana 2 con upsert: inserta Bourbon y actualiza Caturra y Geisha
--- MySQL 8.0.19 o superior:
+--  Semana 2 con upsert: inserta Bourbon y actualiza Caturra y Geisha
 insert into precios_referencia (variedad, precio_kg) values
   ('Caturra',  36800.00),
   ('Geisha',  118000.00),
   ('Bourbon',  41000.00) as nuevo
 on duplicate key update
-  precio_kg = nuevo.precio_kg,
+  precio_kg = values(precio_kg),
   actualizado_en = now();
 
--- MariaDB (no admite el alias "as nuevo"). Si la sentencia anterior da error de
--- sintaxis, usa esta en su lugar (values() está obsoleto en MySQL, pero es lo que
--- MariaDB soporta):
--- insert into precios_referencia (variedad, precio_kg) values
---   ('Caturra',  36800.00),
---   ('Geisha',  118000.00),
---   ('Bourbon',  41000.00)
--- on duplicate key update
---   precio_kg = values(precio_kg),
---   actualizado_en = now();
 
--- 6.4 Verificación: deben quedar 4 variedades, y actualizado_en debe ser más reciente
+--  deben quedar 4 variedades, y actualizado_en debe ser más reciente
 --     en Caturra, Geisha y Bourbon que en Castillo
 select * from precios_referencia order by variedad;
 select count(*) as variedades from precios_referencia;
 
 -- Reflexión Reto 6:
--- (escribe aquí tu respuesta en 2 o 3 líneas)
+-- (on duplicate key update solo se activa cuando se repite una llave primaria o unique. Si variedad no lo fuera,
+-- la semana 2 insertaría Caturra y Geisha otra vez: quedarían 6 filas en lugar de 4, con dos precios para la
+-- misma variedad, y no se sabría cuál es el vigente.)
+
+
+-- Bloque 3: operar el negocio (DML)
+-- RETO 7: La balanza descalibrada
+
+-- Workbench trae activo el modo seguro (error 1175): bloquea update y delete que no filtran por una llave,
+-- para evitar cambiar toda una tabla por accidente. Aquí se desactiva porque algunos update cruzan tablas
+-- o filtran por columnas que no son llave, y antes de cada uno se revisa con un select cuántas filas cambian.
+set sql_safe_updates = 0;
+
+-- Restar 1,5 puntos a las cataciones de Andrea Salazar (sin bajar de 0)
+-- antes: deben cambiar 4 filas (86.50, 89.75, 85.00 y 79.50)
+select c.idCatacion, c.idLote, c.puntaje
+from Catacion c
+join Catador ca on ca.idCatador = c.idCatador
+where ca.nombreCatador = 'Andrea Salazar';
+
+update Catacion c
+join Catador ca on ca.idCatador = c.idCatador
+set c.puntaje = greatest(c.puntaje - 1.5, 0)
+where ca.nombreCatador = 'Andrea Salazar';
+-- el motor debe reportar: 4 row(s) affected
+
+-- después: 85.00, 88.25, 83.50 y 78.00
+select c.idCatacion, c.idLote, c.puntaje
+from Catacion c
+join Catador ca on ca.idCatador = c.idCatador
+where ca.nombreCatador = 'Andrea Salazar';
+
+--  Descuento del 10 % a las líneas del cliente alemán (update que cruza tablas)
+-- antes: deben cambiar 4 filas (pedidos 1 y 3 de la Tostadora de Berlín: 95000, 210000, 98000 y 190000)
+
+select lp.idLineaPedido, lp.idPedido, lp.precioKilo, c.nombreCliente, c.pais
+from LineaPedido lp
+join Pedido p  on p.idPedido  = lp.idPedido
+join Cliente c on c.idCliente = p.idCliente
+where c.pais = 'Alemania';
+
+update LineaPedido lp
+join Pedido p  on p.idPedido  = lp.idPedido
+join Cliente c on c.idCliente = p.idCliente
+set lp.precioKilo = lp.precioKilo * 0.90
+where c.pais = 'Alemania';
+-- el motor debe reportar: 4 row(s) affected
+
+-- después: 85500, 189000, 88200 y 171000
+select lp.idLineaPedido, lp.idPedido, lp.precioKilo, c.nombreCliente, c.pais
+from LineaPedido lp
+join Pedido p  on p.idPedido  = lp.idPedido
+join Cliente c on c.idCliente = p.idCliente
+where c.pais = 'Alemania';
+
+-- Reflexión Reto 7:
+-- (El descuento se habría aplicado dos veces, porque el update calcula sobre el precio que ya tiene la fila:
+-- la línea 1 de la Tostadora de Berlín pasaría de 95.000 a 85.500 y luego a 76.950, un 19 % y no un 10 %.
+-- Igual con Andrea Salazar: le quitaría 3 puntos. Estos update no son idempotentes, por eso se revisa antes con select.)
+
+
+-- RETO 8: El caficultor que se fue
+
+-- Intentar borrar una finca con lotes vendidos: La Esperanza (lotes HUI-2026-001 y HUI-2026-002, vendidos en el pedido 1)
+select l.codigoUnico, lp.idPedido, lp.kilosPedidos
+from Finca f
+join Lote l         on l.idFinca    = f.idFinca
+join Tostion t      on t.idLote     = l.idLote
+join LineaPedido lp on lp.idTostion = t.idTostion
+where f.nombre = 'La Esperanza';
+
+delete from Finca where nombre = 'La Esperanza';
+/* Error: Error Code: 1451. Cannot delete or update a parent row:
+   a foreign key constraint fails (`trazacafe`.`lote`, CONSTRAINT `FKLoteFinca` FOREIGN KEY (`idFinca`) REFERENCES `finca` (`idFinca`))
+   (también puede nombrar FKFincaCertFinca, porque La Esperanza tiene certificaciones; las dos son on delete restrict) */
+
+-- 8.2 Baja lógica: la finca sale de la operación pero su historial se conserva
+alter table Finca
+  add column activa boolean not null default true;
+
+update Finca
+set activa = false
+where nombre = 'La Esperanza';
+
+select idFinca, nombre, activa from Finca;
+
+--  Borrar las cataciones de un lote de prueba con un delete que cruza dos tablas (filtrando por código)
+-- lote de prueba con dos cataciones
+insert into Lote (codigoUnico, variedad, proceso, fechacosecha, kiloslot, idFinca)
+values ('PRB-2026-100', 'Caturra', 'lavado', '2026-03-20', 50.00, 2);
+
+insert into Catacion (puntaje, idCatador, idLote) values
+  (81.00, 2, (select idLote from Lote where codigoUnico = 'PRB-2026-100')),
+  (82.50, 3, (select idLote from Lote where codigoUnico = 'PRB-2026-100'));
+
+-- antes: deben borrarse 2 filas
+select c.idCatacion, c.puntaje, l.codigoUnico
+from Catacion c
+join Lote l on l.idLote = c.idLote
+where l.codigoUnico = 'PRB-2026-100';
+
+delete c
+from Catacion c
+join Lote l on l.idLote = c.idLote
+where l.codigoUnico = 'PRB-2026-100';
+-- el motor debe reportar: 2 row(s) affected
+
+-- Vaciar lotes_especialidad con truncate y después eliminarla con drop
+truncate table lotes_especialidad;
+select count(*) as filas from lotes_especialidad;   -- 0
+
+drop table lotes_especialidad;
+show tables like 'lotes_especialidad';               -- no devuelve nada
+
+-- Reflexión Reto 8:
+-- (DELETE es DML: borra solo las filas que cumplen el where, como las 2 cataciones de PRB-2026-100, respeta las llaves
+-- foráneas (por eso no dejó borrar La Esperanza) y se puede deshacer dentro de una transacción. TRUNCATE es DDL: vacía
+-- toda lotes_especialidad de golpe, sin where, y reinicia el contador. DROP también es DDL: elimina la tabla con su estructura.)
+
+
+-- RETO 9: El pedido que no puede quedar a medias
+
+-- Kilos disponibles por tostión: lo que salió del tostador menos lo que ya se vendió en las líneas de pedido
+alter table Tostion
+  add column kilosDisponibles decimal(10,2) not null default 0;
+
+update Tostion t
+set t.kilosDisponibles = t.kilosSalida - coalesce((select sum(lp.kilosPedidos)
+                                                  from LineaPedido lp
+                                                  where lp.idTostion = t.idTostion), 0);
+
+alter table Tostion
+  add constraint chk_tostion_kilos_disponibles check (kilosDisponibles >= 0);
+
+-- quedan: tostión 1 = 54.50, 2 = 22.00, 3 = 10.80, 4 = 42.20, 5 = 18.60
+select idTostion, kilosSalida, kilosDisponibles from Tostion;
+
+-- Transacción exitosa: pedido de Barista Medellín con 2 líneas y descuento de inventario
+start transaction;
+
+insert into Pedido (idCliente) values (2);
+set @pedido_ok = last_insert_id();
+
+insert into LineaPedido (precioKilo, kilosPedidos, idPedido, idTostion) values
+  (98000.00, 10.00, @pedido_ok, 4),
+  (95000.00, 15.00, @pedido_ok, 1);
+
+update Tostion set kilosDisponibles = kilosDisponibles - 10 where idTostion = 4;
+update Tostion set kilosDisponibles = kilosDisponibles - 15 where idTostion = 1;
+
+commit;
+
+select * from Pedido      where idPedido = @pedido_ok;
+select * from LineaPedido where idPedido = @pedido_ok;
+select idTostion, kilosDisponibles from Tostion where idTostion in (1, 4);   -- 39.50 y 32.20
+
+--  se piden 500 kilos de la tostión 2 que solo tiene 22 disponibles
+start transaction;
+
+insert into Pedido (idCliente) values (2);
+set @pedido_malo = last_insert_id();
+
+insert into LineaPedido (precioKilo, kilosPedidos, idPedido, idTostion) values
+  ( 98000.00,   5.00, @pedido_malo, 4),
+  (210000.00, 500.00, @pedido_malo, 2);
+
+update Tostion set kilosDisponibles = kilosDisponibles - 5   where idTostion = 4;
+update Tostion set kilosDisponibles = kilosDisponibles - 500 where idTostion = 2;
+/* Falla a propósito:  Error Code: 4025. CONSTRAINT `chk_tostion_kilos_disponibles` failed for `trazacafe`.`tostion` / Error Code: 3819. Check constraint 'chk_tostion_kilos_disponibles' is violated. */
+
+rollback;
+
+-- no quedó ni la cabecera, ni las líneas, y la tostión 4 sigue en 32.20 (el descuento de 5 kilos también se deshizo)
+select * from Pedido      where idPedido = @pedido_malo;   -- 0 filas
+select * from LineaPedido where idPedido = @pedido_malo;   -- 0 filas
+select idTostion, kilosDisponibles from Tostion where idTostion in (2, 4);
+
+--  Savepoint: se confirma la primera línea y se deshace solo la segunda
+start transaction;
+
+insert into Pedido (idCliente) values (1);
+set @pedido_savepoint = last_insert_id();
+
+insert into LineaPedido (precioKilo, kilosPedidos, idPedido, idTostion)
+values (190000.00, 5.00, @pedido_savepoint, 5);
+update Tostion set kilosDisponibles = kilosDisponibles - 5 where idTostion = 5;
+
+savepoint antes_segunda_linea;
+
+insert into LineaPedido (precioKilo, kilosPedidos, idPedido, idTostion)
+values (72000.00, 50.00, @pedido_savepoint, 3);
+update Tostion set kilosDisponibles = kilosDisponibles - 50 where idTostion = 3;
+-- falla por el check: la tostión 3 solo tiene 10.80 kilos
+
+rollback to savepoint antes_segunda_linea;
+
+commit;
+
+-- la cabecera y la primera línea existen; la segunda no. Tostión 5 = 13.60 y tostión 3 sigue en 10.80
+select * from Pedido      where idPedido = @pedido_savepoint;
+select * from LineaPedido where idPedido = @pedido_savepoint;
+select idTostion, kilosDisponibles from Tostion where idTostion in (3, 5);
+
+-- 9.5 Experimento: DDL dentro de una transacción
+start transaction;
+create table prueba (id int primary key);
+rollback;
+
+show tables like 'prueba';
+-- en MySQL/MariaDB la tabla SÍ existe: create table hace un commit implícito y el rollback ya no tiene qué deshacer.
+-- en PostgreSQL NO existiría, porque allá el DDL también es transaccional.
+
+drop table if exists prueba;
+
+-- Reflexión Reto 9:
+-- (En MySQL el create table hizo commit implícito, así que el rollback no borró la tabla prueba. El riesgo en una migración:
+-- si un script como el del reto 4 falla a la mitad, los alter table que ya corrieron se quedan (por ejemplo, pais ya agregada
+-- pero huella_carbono_kg no) y la base queda a medias; hay que escribir pasos idempotentes y tener copia de respaldo.)
+
+
+-- RETO 10: El QR que cuenta la historia
+-- El promedio SCA se calcula por lote en una subconsulta, así cada línea trae el promedio de todas las cataciones de su lote.
+-- La finca aparece aunque esté inactiva (La Esperanza), porque el historial de ventas no se pierde.
+create or replace view v_trazabilidad as
+select
+  lp.idLineaPedido,
+  p.idPedido,
+  c.nombreCliente     as cliente,
+  c.pais,
+  f.nombre            as finca,
+  f.caficultor,
+  f.municipio,
+  f.altitud,
+  l.codigoUnico       as codigoLote,
+  l.variedad,
+  l.proceso,
+  pc.puntajePromedio,
+  t.fechaTostion,
+  t.perfil,
+  concat(
+    l.variedad, ' ', l.proceso,
+    ' de Finca ', f.nombre, ', ', f.municipio,
+    ' (', format(f.altitud, 0, 'de_DE'), ' m). ',
+    'Puntaje ', coalesce(format(pc.puntajePromedio, 2, 'de_DE'), 'sin catar'), '. ',
+    'Tostado ', t.perfil, ' el ', date_format(t.fechaTostion, '%Y-%m-%d'), '.'
+  ) as texto_qr
+from LineaPedido lp
+join Pedido p   on p.idPedido  = lp.idPedido
+join Cliente c  on c.idCliente = p.idCliente
+join Tostion t  on t.idTostion = lp.idTostion
+join Lote l     on l.idLote    = t.idLote
+join Finca f    on f.idFinca   = l.idFinca
+left join (
+  select idLote, round(avg(puntaje), 2) as puntajePromedio
+  from Catacion
+  group by idLote
+) pc on pc.idLote = l.idLote;
+
+-- Consulta como la haría la app: un solo pedido (pedido 1, Tostadora de Berlín)
+select cliente, pais, codigoLote, texto_qr
+from v_trazabilidad
+where idPedido = 1;
+
+select * from v_trazabilidad;
+
+-- Script idempotente: al inicio del archivo está drop database if exists trazacafe, la vista usa
+-- create or replace view y la tabla prueba del reto 9 se borra con drop table if exists.
+
+-- Al consumidor de café de especialidad le importa saber que el caficultor recibió un pago justo;
+-- ponerlo en el QR hace la historia verificable también en lo económico, no solo en el origen.
+alter table Lote
+  add column precioCaficultorKg decimal(12,2) null;
+
+alter table Lote
+  add constraint chk_lote_precio_caficultor check (precioCaficultorKg > 0);
+
+update Lote
+set precioCaficultorKg = case codigoUnico
+    when 'HUI-2026-001' then 18500.00
+    when 'HUI-2026-002' then 45000.00
+    when 'QUI-2026-001' then 16800.00
+    when 'QUI-2026-002' then 22000.00
+    when 'NAR-2026-001' then 19000.00
+    when 'NAR-2026-002' then 42000.00
+    when 'ANT-2026-001' then 16500.00
+    when 'ANT-2026-002' then 21500.00
+  end
+where codigoUnico in ('HUI-2026-001','HUI-2026-002','QUI-2026-001','QUI-2026-002',
+                      'NAR-2026-001','NAR-2026-002','ANT-2026-001','ANT-2026-002');
+
+-- se actualiza la vista con el nuevo dato (create or replace permite cambiarla sin borrarla)
+create or replace view v_trazabilidad as
+select
+  lp.idLineaPedido,
+  p.idPedido,
+  c.nombreCliente     as cliente,
+  c.pais,
+  f.nombre            as finca,
+  f.caficultor,
+  f.municipio,
+  f.altitud,
+  l.codigoUnico       as codigoLote,
+  l.variedad,
+  l.proceso,
+  pc.puntajePromedio,
+  t.fechaTostion,
+  t.perfil,
+  l.precioCaficultorKg,
+  concat(
+    l.variedad, ' ', l.proceso,
+    ' de Finca ', f.nombre, ', ', f.municipio,
+    ' (', format(f.altitud, 0, 'de_DE'), ' m). ',
+    'Puntaje ', coalesce(format(pc.puntajePromedio, 2, 'de_DE'), 'sin catar'), '. ',
+    'Tostado ', t.perfil, ' el ', date_format(t.fechaTostion, '%Y-%m-%d'), '.',
+    coalesce(concat(' Al caficultor se le pagaron $', format(l.precioCaficultorKg, 0, 'de_DE'), ' por kilo.'), '')
+  ) as texto_qr
+from LineaPedido lp
+join Pedido p   on p.idPedido  = lp.idPedido
+join Cliente c  on c.idCliente = p.idCliente
+join Tostion t  on t.idTostion = lp.idTostion
+join Lote l     on l.idLote    = t.idLote
+join Finca f    on f.idFinca   = l.idFinca
+left join (
+  select idLote, round(avg(puntaje), 2) as puntajePromedio
+  from Catacion
+  group by idLote
+) pc on pc.idLote = l.idLote;
+
+select cliente, codigoLote, precioCaficultorKg, texto_qr
+from v_trazabilidad
+where idPedido = 1;
+
+-- se vuelve a activar el modo seguro que se apagó en el reto 7
+set sql_safe_updates = 1;
+
+-- Reflexión Reto 10:
+-- (No, una vista no guarda datos: guarda la consulta y la ejecuta cada vez. Por eso v_trazabilidad ya muestra el puntaje
+-- corregido del reto 7 (HUI-2026-001 con 85,50), mientras que lotes_especialidad había copiado 86,25 en el reto 5 y se
+-- quedó desactualizada. La vista no duplica datos ni hay que sincronizarla.)
