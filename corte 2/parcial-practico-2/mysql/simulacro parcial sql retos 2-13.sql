@@ -663,5 +663,10 @@ call sp_programar_entrega('ENT-0022', 6, 4, 4, '2026-10-03 11:00:00', 'Guarne', 
 call sp_programar_entrega('ENT-0023', 2, 7, 7, '2026-10-04 08:00:00', 'Arcabuco', 28.0, 'NORMAL');
  
 select * from vw_tablero_entregas where codigo = 'ENT-0021';
+
+-- EVIDENCIA 
+-- Tablas creadas Y estructura de entregas 
+show tables from dronandes;
+describe entregas;
  
  
