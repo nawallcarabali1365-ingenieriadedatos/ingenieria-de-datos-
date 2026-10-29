@@ -1,0 +1,59 @@
+
+// Laboratorio 1 · Modelado y consultas en SaborYa
+
+
+
+// parte A · 
+
+
+// A1. Comprobar la base actual y listar sus colecciones
+db
+db.getCollectionNames()
+//  Hay 4 colecciones [ 'pedidos', 'productos', 'clientes', 'restaurantes' ]
+
+
+// A2. Conteo de documentos de cada colección
+db.restaurantes.countDocuments()
+
+db.clientes.countDocuments()
+
+db.productos.countDocuments()
+
+db.pedidos.countDocuments()
+
+
+
+// A3. Insertar el restaurante R11 (Café Arriero)
+db.restaurantes.insertOne({ _id: "R11",nombre: "Café Arriero",categoria: "Cafetería",ciudad: "Medellín",barrio: "Laureles",calificacion: 4.5,domicilio: true,ubicacion: { type: "Point", coordinates: [-75.5925, 6.2442] },  // [longitud, latitud]etiquetas: ["café", "postres"]
+})
+
+
+// A4. Insertar dos productos del R11 en una operacion
+db.productos.insertMany([{ _id: "P25", restaurante_id: "R11", nombre: "Tinto campesino", tipo: "bebida", precio: 3500, stock: 100, disponible: true, volumen_ml: 200 },{ _id: "P26", restaurante_id: "R11", nombre: "Torta de zanahoria", tipo: "postre", precio: 9000, stock: 20, disponible: true }
+])
+
+// A5. Restaurantes de Medellín y conteo de productos del R11
+db.restaurantes.find({ ciudad: "Medellín" }, { nombre: 1, barrio: 1, calificacion: 1 }
+)
+db.productos.countDocuments({ restaurante_id: "R11" })
+
+
+
+
+// parte B · Modelado y validación de reseñas
+
+
+// B1. Verificar tipos con $type
+
+// Pedidos donde la fecha no es tipo Date:
+db.pedidos.countDocuments({ fecha: { $not: { $type: "date" } } })
+
+
+//  pedidos cuya fecha si es Date
+db.pedidos.countDocuments({ fecha: { $type: "date" } })
+
+// productos con el precio guardado como texto:
+db.productos.countDocuments({ precio: { $type: "string" } })
+
+
+
