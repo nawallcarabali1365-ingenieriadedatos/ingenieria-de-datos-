@@ -240,3 +240,13 @@ db.productos.find({},{ nombre: 1, precio: 1 }).sort({ precio: -1, _id: 1 }).skip
 // C8. Restaurantes que tienen el campo horario o el campo menu_vegano
 db.restaurantes.find({ $or: [ { horario: { $exists: true } }, { menu_vegano: { $exists: true } } ] },{ nombre: 1, horario: 1, menu_vegano: 1 })
 // Resultado: 2 documentos: Sushi Nikko (R02, tiene horario) y Verde Vivo (R06, tiene menu_vegano).
+
+
+
+db.restaurantes.find({ciudad:'Medellín'})
+db.productos.find({precio:{$lt:10000}},{nombre:1,precio:1,_id:0})
+db.restaurantes.find({calificacion:{$gte:4.5}}).sort({calificacion:-1})
+db.clientes.find({ciudad:{$in:['Bogotá','Barranquilla']}})
+db.productos.updateOne({_id:'P01'},{$inc:{precio:500}})
+db.productos.updateMany({ stock: 0},{$set:{disponible : false}})
+db.clientes.updateOne({email:'sofia.vargas@example.com'},{$setOnInsert:{_id:'C09',nombre:"Sofia Vargas", ciudad: 'Medellín', fecha_registro: new Date(),puntos:0,direcciones[]}},{upsert:true})
