@@ -131,7 +131,7 @@ db.pedidos.countDocuments({ fecha: { $not: { $type: "date" } } })
 
 //  pedidos cuya fecha si es Date
 db.pedidos.countDocuments({ fecha: { $type: "date" } })
-// Resultado: 21. Coincide con el total de pedidos → todas las fechas son Date.
+// Resultado: 20. Coincide con el total de pedidos → todas las fechas son Date.
 
 // productos con el precio guardado como texto:
 db.productos.countDocuments({ precio: { $type: "string" } })
@@ -140,33 +140,9 @@ db.productos.countDocuments({ precio: { $type: "string" } })
 // B2. ¿Reseñas embebidas en el restaurante o en colección propia? Guardaría las reseñas en una colección propia (resenas), cada una con el restaurante_id, y de cada cliente copiaría solo el id, para referenciarlo, sin el nombre para que no se sientan presionados a dar una buena reseña.
 
 // B3. Crear la colección resenas con su regla $jsonSchema
-db.createCollection("resenas", {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: ["restaurante_id", "cliente", "calificacion", "texto", "fecha"],
-      properties: {
-        restaurante_id: { bsonType: "string" },
-        cliente: {
-          bsonType: "object",
-          required: ["id", "nombre"],
-          properties: {
-            id:     { bsonType: "string" },
-            nombre: { bsonType: "string" }
-          }
-        },
-        calificacion: { bsonType: "int", minimum: 1, maximum: 5,
-                        description: "entero de 1 a 5" },
-        texto: { bsonType: "string", minLength: 5,
-                 description: "al menos 5 caracteres" },
-        fecha: { bsonType: "date" },
-        fotos: { bsonType: "array", maxItems: 4,
-                 items: { bsonType: "string" },
-                 description: "opcional, hasta 4 URLs" }
-      }
-    }
-  }
-})
+db.createCollection("resenas", { validator: {$jsonSchema: { bsonType: "object", required: ["restaurante_id", "cliente", "calificacion", "texto", "fecha"],properties: {restaurante_id: { bsonType: "string" },cliente: {bsonType: "object",required: ["id", "nombre"],properties: {id:     { bsonType: "string" },nombre: { bsonType: "string" }}
+},calificacion: { bsonType: "int", minimum: 1, maximum: 5,description: "entero de 1 a 5" }, texto: { bsonType: "string", minLength: 5, description: "al menos 5 caracteres" }, fecha: { bsonType: "date" },fotos: { bsonType: "array", maxItems: 4,items: { bsonType: "string" },description: "opcional, hasta 4 URLs" }}}
+}})
 // Resultado: { ok: 1 }. La colección se creó con su validador.
 
 // B4. Insertar cuatro reseñas válidas en una sola operación
@@ -208,10 +184,7 @@ db.resenas.find({ "fotos.0": { $exists: true } })
 // B7. resumen de reseñas en R02
 // Cálculo con los datos de B4: R02 tiene 2 reseñas (5 y 4).
 // promedio = (5 + 4) / 2 = 4.5 ; total = 2
-db.restaurantes.updateOne(
-  { _id: "R02" },
-  { $set: { resumen_resenas: { promedio: 4.5, total: 2 } } }
-)
+db.restaurantes.updateOne({ _id: "R02" },{ $set: { resumen_resenas: { promedio: 4.5, total: 2 } } })
 // Resultado: { acknowledged: true, matchedCount: 1, modifiedCount: 1, upsertedCount: 0 } 
 db.restaurantes.findOne({ _id: "R02" }, { nombre: 1, resumen_resenas: 1 })
 // Resultado: { _id: 'R02', nombre: 'Sushi Nikko', resumen_resenas: { promedio: 4.5, total: 2 } }
