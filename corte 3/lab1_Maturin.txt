@@ -221,6 +221,7 @@ db.pedidos.find( { fecha: { $gte: new Date("2026-10-12T00:00:00-05:00"),$lt:  ne
 // Resultado: 5 documentos.
 // PD015 (en_camino), PD016 (pendiente), PD017 (en_camino), PD018 (pendiente), PD020 (cancelado).
 
+
 // C6. Pedidos con algún ítem de precio < 10.000 y cantidad >= 2 en ESE MISMO ítem
 
 db.pedidos.find({ items: { $elemMatch: { precio: { $lt: 10000 }, cantidad: { $gte: 2 } } } },
@@ -369,3 +370,59 @@ db.pedidos.countDocuments()
 // Resultado: 19. (20 iniciales - 1 eliminado en D7).
 db.resenas.countDocuments()
 // Resultado: 3. (4 insertadas en B4 - 1 eliminada en D6).
+db.productos.aggregate([{ $match: { disponible: true } },{ $sort: { precio: -1 } },{ $group: {_id: "$restaurante_id", menu: { $push: { nombre: "$nombre", precio: "$precio" } },precio_max: { $max: "$precio" }} },{ $sort: { _id: 1 } }, { $limit: 3 }])
+{
+  _id: 'R01',
+  menu: [
+    {
+      nombre: 'Arepa rellena de carne',
+      precio: 14000
+    },
+    {
+      nombre: 'Arepa de choclo con queso',
+      precio: 10000
+    },
+    {
+      nombre: 'Jugo de lulo',
+      precio: 6000
+    }
+  ],
+  precio_max: 14000
+}
+{
+  _id: 'R02',
+  menu: [
+    {
+      nombre: 'Combo Sake',
+      precio: 41000
+    },
+    {
+      nombre: 'Ramen tonkotsu',
+      precio: 36000
+    },
+    {
+      nombre: 'Té verde',
+      precio: 7000
+    }
+  ],
+  precio_max: 41000
+}
+{
+  _id: 'R03',
+  menu: [
+    {
+      nombre: 'Pizza margarita grande',
+      precio: 38000
+    },
+    {
+      nombre: 'Pizza hawaiana mediana',
+      precio: 32000
+    }
+  ],
+  precio_max: 38000
+}
+Enterprise saborya
+Selection deleted
+
+
+
