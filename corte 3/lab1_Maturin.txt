@@ -250,3 +250,122 @@ db.clientes.find({ciudad:{$in:['Bogotá','Barranquilla']}})
 db.productos.updateOne({_id:'P01'},{$inc:{precio:500}})
 db.productos.updateMany({ stock: 0},{$set:{disponible : false}})
 db.clientes.updateOne({email:'sofia.vargas@example.com'},{$setOnInsert:{_id:'C09',nombre:"Sofia Vargas", ciudad: 'Medellín', fecha_registro: new Date(),puntos:0,direcciones[]}},{upsert:true})
+
+// Parte D. Actualizaciones, upsert y eliminaciones[cite: 4]
+
+// D1. Sube 1.000 pesos a todos los productos de tipo plato del restaurante R07
+db.productos.updateMany({ restaurante_id: "R07", tipo: "plato" },{ $inc: { precio: 1000 } })
+// Resultado: 
+{ acknowledged: true
+insertedId: null
+matchedCount: 1
+modifiedCount: 1
+upsertedCount: 0 }
+// Explicación: 
+// matchedCount (1): Coincidió 1 solo documento con los criterios del filtro, modifiedCount (1): Se actualizó 1 documento  ya que el producto P16 "Bandeja paisa" pasó de 34.000 a 35.000 pesos). upsertedCount (0): No se insertaron nuevos documentos.
+// ¿Por qué se modificó solo un producto si R07 tiene dos? El restaurante R07 posee dos productos: P16 ("Bandeja paisa", de tipo "plato") y P17 ("Arepa con hogao", de tipo "acompañamiento")Al especificar la condición `tipo: "plato"`, el producto P17 no cumple con el filtro y queda excluido de la actualización.
+
+
+// D2. El pedido PD018 sale a reparto: cámbialo a en_camino solo si está pendiente[cite: 4]
+// Primera ejecución:
+db.pedidos.updateOne({ _id: "PD018", estado: "pendiente" },{ $set: { estado: "en_camino" } })
+// Resultado Primera ejecución: { 
+acknowledged: true
+insertedId: null
+matchedCount: 1
+modifiedCount: 1
+upsertedCount: 0 }
+// Explicación ejecución: 
+// matchedCount (1): MongoDB encontró el pedido PD018 ya que su estado actual era "pendiente" y modifiedCount (1): Cambió satisfactoriamente su estado a "en_camino".
+
+// Segunda ejecución:
+db.pedidos.updateOne({ _id: "PD018", estado: "pendiente" },{ $set: { estado: "en_camino" } })
+// Resultado Segunda ejecución: 
+{ acknowledged: true
+insertedId: null
+matchedCount: 0
+modifiedCount: 0
+upsertedCount: 0 }
+// Explicación Segunda ejecución:
+// matchedCount (0) y modifiedCount (0): Tras la primera ejecución, el estado del pedido PD018 ahora es "en_camino". Al ejecutar el comando por segunda vez, no encuentra ningún documento que cumpla el filtro `{ estado: "pendiente" }`, por lo que no se realiza ninguna modificación.
+
+// D3. Agrega "japonesa" a las preferencias de Valentina Ríos (C03) sin que quede repetida.
+// Primera ejecución:
+db.clientes.updateOne({ _id: "C03" },{ $addToSet: { preferencias: "japonesa" } })
+// Resultado Primera ejecución: 
+{ acknowledged: true
+insertedId: null
+matchedCount: 1
+modifiedCount: 1
+upsertedCount: 0 }
+// Explicación Primera ejecución:
+// matchedCount (1): Se halló la cliente C03 (Valentina Ríos) y  modifiedCount (1): Como "japonesa" no figuraba en su lista original de preferencias (que era `["hamburguesas"]`), fue agregada al arreglo.
+
+// Segunda ejecución:
+db.clientes.updateOne({ _id: "C03" },{ $addToSet: { preferencias: "japonesa" } })
+// Resultado Segunda ejecución: { acknowledged: true, insertedId: null, matchedCount: 1, modifiedCount: 0, upsertedCount: 0 }
+// Explicación Segunda ejecución:
+// matchedCount (1): Se encontró nuevamente la cliente C03 y modifiedCount (0): El operador $addToSet garantiza que no se agreguen elementos duplicados a un arreglo. Como "japonesa" ya pertenecía al arreglo, no se aplicó ninguna modificación.
+
+// D4. Registra a Natalia Suárez sin duplicarla si ya existe (búsqueda por email)[cite: 4]
+db.clientes.updateOne({ email: "natalia.suarez@example.com" },{$setOnInsert: { _id: "C09", nombre: "Natalia Suárez", email: "natalia.suarez@example.com",ciudad: "Medellín",
+fecha_registro: new Date(),puntos: 0,direcciones: [],preferencias: []}},{ upsert: true })
+// Resultado: { 
+acknowledged: true
+insertedId: 'C09'
+matchedCount: 0
+modifiedCount: 0
+upsertedCount: 1 }
+// Explicación:
+// matchedCount (0): No se encontró ningún cliente registrado previamente con el correo natalia.suarez@example.com, modifiedCount (0): Ningún documento existente se modificó y upsertedCount (1): Debido a que matchedCount fue 0 y la opción `{ upsert: true }` estaba activa, MongoDB creó e insertó un nuevo documento con `_id: "C09"`.
+
+
+// D5. Elimina el campo volumen_ml del Té verde (P06)[cite: 4]
+db.productos.updateOne({ _id: "P06" },{ $unset: { volumen_ml: "" } })
+// Resultado: { 
+acknowledged: true
+insertedId: null
+matchedCount: 1
+modifiedCount: 1
+upsertedCount: 0 }
+// Explicación:
+// matchedCount (1): Se ubicó el producto P06 ("Té verde") y modifiedCount (1): Se eliminó la clave/campo `volumen_ml` de la estructura del documento de manera exitosa.
+
+
+// D6. Elimina las reseñas con calificación menor a 3 (contar antes de borrar)[cite: 4]
+
+// Conteo previo:
+db.resenas.countDocuments({ calificacion: { $lt: 3 } })
+// Resultado: 1. Existe 1 reseña con calificación menor a 3 (la reseña de Valentina Ríos para R04 con calificación 2)[cite: 5].
+
+// Operación de borrado:
+db.resenas.deleteMany({ calificacion: { $lt: 3 } })
+// Resultado: { acknowledged: true, deletedCount: 1 }
+// Explicación:
+// deletedCount (1): Indica que se eliminó 1 documento correspondiente a la reseña con calificación inferior a 3.
+
+
+// D7. Elimina los pedidos cancelados de Medellín (contar antes de borrar)[cite: 4]
+
+// Conteo previo:
+db.pedidos.countDocuments({ "restaurante.ciudad": "Medellín", estado: "cancelado" })
+// Resultado: 1. Existe 1 pedido cancelado en la ciudad de Medellín (PD020 del restaurante Verde Vivo)[cite: 5].
+
+// Operación de borrado:
+db.pedidos.deleteMany({ "restaurante.ciudad": "Medellín", estado: "cancelado" })
+// Resultado: { acknowledged: true, deletedCount: 1 }
+// Explicación:
+// deletedCount (1): Se eliminó exitosamente el documento PD020, único pedido cancelado de Medellín.
+
+
+// D8. Verificación final: cuenta los documentos de las 5 colecciones
+db.restaurantes.countDocuments()
+// Resultado: 11. (10 iniciales + 1 agregado en A3).
+db.clientes.countDocuments()
+// Resultado: 9. (8 iniciales + 1 agregado mediante upsert en D4).
+db.productos.countDocuments()
+// Resultado: 26. (24 iniciales + 2 agregados en A4).
+db.pedidos.countDocuments()
+// Resultado: 19. (20 iniciales - 1 eliminado en D7).
+db.resenas.countDocuments()
+// Resultado: 3. (4 insertadas en B4 - 1 eliminada en D6).
